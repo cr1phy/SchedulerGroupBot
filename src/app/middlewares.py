@@ -1,9 +1,11 @@
 from collections.abc import Awaitable, Callable
-from typing import Any
+from typing import Any, cast
 from aiogram import BaseMiddleware
 from aiogram.types import TelegramObject, Update
 from structlog import get_logger
 from structlog.types import FilteringBoundLogger
+
+from src.app.main import OWNER_TGID
 
 
 class LoggingMiddleware(BaseMiddleware):
@@ -23,4 +25,18 @@ class LoggingMiddleware(BaseMiddleware):
                 )
             case _:
                 pass
+        return await handler(event, data)
+
+
+class OnlyOwnerMiddleware(BaseMiddleware):
+    async def __call__(self, handler: Callable[[TelegramObject, dict[str, Any]], Awaitable[Any]], event: TelegramObject, data: dict[str, Any]) -> Any:
+        update = cast(Update, event)
+        user_id: int = -1
+        match update:
+            case Update(message=msg) if msg and msg.from_user:
+                user_id = msg.from_user.id
+            case _:
+                pass
+        if user_id != OWNER_TGID:
+            return
         return await handler(event, data)

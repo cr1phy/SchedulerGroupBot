@@ -1,9 +1,12 @@
+from dataclasses import dataclass, field
 from datetime import time
 from typing import Annotated, TYPE_CHECKING
 from apscheduler.job import Job  # type: ignore[import]
 import dateparser
 from pydantic import BaseModel, BeforeValidator
-from apscheduler.schedulers.asyncio import AsyncIOScheduler  # type: ignore[import]
+from apscheduler.schedulers.asyncio import AsyncIOScheduler # type: ignore[import]
+
+from app.dao import LessonDAO  # type: ignore[import]
 
 if TYPE_CHECKING:
     from app.forms import AddLesson, DeleteLesson, UpdateLesson
@@ -45,24 +48,26 @@ class Lesson(BaseModel):
         else:
             raise ValueError("In your data must be minimum 3 words after command")
 
-
+@dataclass
 class Schedule:
-    def __init__(self, scheduler: AsyncIOScheduler) -> None:
-        self._scheduler = scheduler
-        self._lessons: dict[int, Lesson] = {}
-        self._jobs: dict[int, Job] = {}
+    _dao: LessonDAO
+    _scheduler: AsyncIOScheduler = field(default_factory=AsyncIOScheduler)
+    _lessons: dict[int, Lesson] = field(default_factory=dict[int, Lesson])
+    _jobs: dict[int, Job] = field(default_factory=dict[int, Job])
 
-    async def add(self, form: "AddLesson") -> Job:
-        from app.forms import AddLesson
+    def start(self) -> None:
+        self._scheduler.start()
 
-        return Job()
+    async def add(self, form: AddLesson) -> Job:
+        lesson_id = await self._dao.insert(form.lesson)
+        job = Job(self._scheduler, lesson_id)
+        self._lessons[lesson_id] = form.lesson
+        return job
 
     async def update(self, form: "UpdateLesson") -> bool:
-        from app.forms import UpdateLesson
 
         return True
 
     async def delete(self, form: "DeleteLesson") -> bool:
-        from app.forms import DeleteLesson
 
         return True

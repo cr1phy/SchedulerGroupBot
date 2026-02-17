@@ -1,12 +1,13 @@
 import asyncio
+import asyncpg # type: ignore[import]
 from aiogram import Bot, Dispatcher
 from aiogram.enums import ParseMode
 from aiogram.client.default import DefaultBotProperties
 from os import getenv
 from dotenv import load_dotenv
-from apscheduler.schedulers.asyncio import AsyncIOScheduler
 import structlog
-from middlewares import LoggingMiddleware
+from app.dao import LessonDAO
+from middlewares import LoggingMiddleware, OnlyOwnerMiddleware
 from router import router
 from models import Schedule
 
@@ -21,6 +22,8 @@ def get_required_envvar(key: str) -> str:
 
 
 BOT_TOKEN = get_required_envvar("BOT_TOKEN")
+DATABASE_URL = get_required_envvar("DATABASE_URL")
+OWNER_TGID: int = int(get_required_envvar("OWNER_TGID"))
 
 
 async def main() -> None:
@@ -35,15 +38,18 @@ async def main() -> None:
         ]
     )
 
+    pool: asyncpg.Pool = asyncpg.create_pool(DATABASE_URL)  # type: ignore
+    dao = LessonDAO(pool)
+    schedule = Schedule(dao)
+
     bot = Bot(token=BOT_TOKEN, default=DefaultBotProperties(parse_mode=ParseMode.HTML))
     dp = Dispatcher()
     dp.update.middleware(LoggingMiddleware())
+    dp.update.middleware(OnlyOwnerMiddleware())
     dp.include_router(router)
 
-    scheduler = AsyncIOScheduler()
-    scheduler.start()
-
-    await dp.start_polling(bot, schedule=Schedule(scheduler))  # type: ignore
+    schedule.start()
+    await dp.start_polling(bot, schedule=schedule)  # type: ignore
 
 
 if __name__ == "__main__":
