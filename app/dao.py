@@ -17,7 +17,10 @@ class LessonDAO:
 
     async def get_all(self) -> list[tuple[int, Lesson]]:
         rows: list[Record] = await self._pool.fetch("SELECT * FROM lessons")  # type: ignore
-        return [(row['id'], Lesson(**{k: v for k, v in row.items() if k != "id"})) for row in rows]
+        return [
+            (row["id"], Lesson(**{k: v for k, v in row.items() if k != "id"}))
+            for row in rows
+        ]
 
     async def update(self, lesson_id: int, new_lesson: Lesson) -> None:
         await self._pool.execute(  # type: ignore
