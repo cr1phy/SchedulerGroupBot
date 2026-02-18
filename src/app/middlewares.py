@@ -29,7 +29,15 @@ class LoggingMiddleware(BaseMiddleware):
 
 
 class OnlyOwnerMiddleware(BaseMiddleware):
-    async def __call__(self, handler: Callable[[TelegramObject, dict[str, Any]], Awaitable[Any]], event: TelegramObject, data: dict[str, Any]) -> Any:
+    def __init__(self, owner_id: int) -> None:
+        self._owner_id = owner_id
+
+    async def __call__(
+        self,
+        handler: Callable[[TelegramObject, dict[str, Any]], Awaitable[Any]],
+        event: TelegramObject,
+        data: dict[str, Any],
+    ) -> Any:
         update = cast(Update, event)
         user_id: int = -1
         match update:

@@ -17,9 +17,9 @@ class AddLesson(BaseModel):
 
 
 class UpdateLesson(BaseModel):
-    lesson_id: str
+    lesson_id: int
     lesson: LessonPartial  # type: ignore
 
 
 class DeleteLesson(BaseModel):
-    lesson_id: str
+    lesson_id: int

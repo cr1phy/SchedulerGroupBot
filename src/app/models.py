@@ -1,15 +1,13 @@
 from dataclasses import dataclass, field
 from datetime import time
-from typing import Annotated, TYPE_CHECKING
+from typing import Annotated
 from apscheduler.job import Job  # type: ignore[import]
 import dateparser
 from pydantic import BaseModel, BeforeValidator
-from apscheduler.schedulers.asyncio import AsyncIOScheduler # type: ignore[import]
+from apscheduler.schedulers.asyncio import AsyncIOScheduler  # type: ignore[import]
 
 from app.dao import LessonDAO  # type: ignore[import]
-
-if TYPE_CHECKING:
-    from app.forms import AddLesson, DeleteLesson, UpdateLesson
+from app.forms import AddLesson, DeleteLesson, UpdateLesson
 
 
 def validate_day_of_week(value: int):
@@ -48,6 +46,7 @@ class Lesson(BaseModel):
         else:
             raise ValueError("In your data must be minimum 3 words after command")
 
+
 @dataclass
 class Schedule:
     _dao: LessonDAO
@@ -58,16 +57,61 @@ class Schedule:
     def start(self) -> None:
         self._scheduler.start()
 
+    async def load(self) -> None:
+        lessons = await self._dao.get_all()
+        for lesson_id, lesson in lessons:
+            self._lessons[lesson_id] = lesson
+            self._add_job(lesson_id, lesson)
+
+    def _add_job(self, lesson_id: int, lesson: Lesson) -> Job:
+        return self._scheduler.add_job(
+            _,
+            trigger="cron",
+            day_of_week=lesson.day,
+            hour=lesson.start_time.hour,
+            minute=lesson.start_time.minute,
+            id=f"lesson_{lesson_id}",
+            args=[lesson_id],
+        )
+
     async def add(self, form: AddLesson) -> Job:
         lesson_id = await self._dao.insert(form.lesson)
-        job = Job(self._scheduler, lesson_id)
+        job = self._add_job(lesson_id, form.lesson)
+
         self._lessons[lesson_id] = form.lesson
+        self._jobs[lesson_id] = job
+
         return job
 
-    async def update(self, form: "UpdateLesson") -> bool:
+    async def update(self, form: UpdateLesson) -> bool:
+        if form.lesson_id not in self._lessons:
+            return False
 
+        old_lesson = self._lessons[form.lesson_id]
+
+        lesson: Lesson = form.lesson or old_lesson
+        new_lesson = Lesson(
+            day=lesson.day,
+            start_time=lesson.start_time,
+            subject=lesson.subject,
+        )
+
+        await self._dao.update(form.lesson_id, new_lesson)
+
+        self._scheduler.remove_job(f"lesson_{form.lesson_id}")
+        job = self._add_job(form.lesson_id, new_lesson)
+
+        self._lessons[form.lesson_id] = new_lesson
+        self._jobs[form.lesson_id] = job
         return True
 
-    async def delete(self, form: "DeleteLesson") -> bool:
+    async def delete(self, form: DeleteLesson) -> bool:
+        if form.lesson_id not in self._lessons:
+            return False
 
+        await self._dao.delete(form.lesson_id)
+        self._scheduler.remove_job(f"lesson_{form.lesson_id}")  # type: ignore
+
+        del self._lessons[form.lesson_id]
+        del self._jobs[form.lesson_id]
         return True

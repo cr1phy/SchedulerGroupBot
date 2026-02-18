@@ -38,17 +38,19 @@ async def main() -> None:
         ]
     )
 
-    pool: asyncpg.Pool = asyncpg.create_pool(DATABASE_URL)  # type: ignore
+    pool = await asyncpg.create_pool(DATABASE_URL)  # type: ignore
     dao = LessonDAO(pool)
     schedule = Schedule(dao)
 
     bot = Bot(token=BOT_TOKEN, default=DefaultBotProperties(parse_mode=ParseMode.HTML))
     dp = Dispatcher()
     dp.update.middleware(LoggingMiddleware())
-    dp.update.middleware(OnlyOwnerMiddleware())
+    dp.update.middleware(OnlyOwnerMiddleware(OWNER_TGID))
     dp.include_router(router)
 
     schedule.start()
+    await schedule.load()
+
     await dp.start_polling(bot, schedule=schedule)  # type: ignore
 
 
