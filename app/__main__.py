@@ -57,7 +57,7 @@ async def main() -> None:
         with open("migrations/001_init.sql") as f:
             await conn.execute(f.read())  # type: ignore
 
-    redis = from_url(REDIS_URL)
+    redis = await from_url(REDIS_URL)
 
     bot = Bot(token=BOT_TOKEN, default=DefaultBotProperties(parse_mode=ParseMode.HTML))
     dp = Dispatcher()
@@ -68,6 +68,8 @@ async def main() -> None:
     dao = LessonDAO(pool)
     schedule = Schedule(dao)
     schedule.start()
+    schedule.setup_reminders(bot, redis)
+    schedule.setup_payment_reminders()
     await schedule.load()
 
     await set_commands(bot)

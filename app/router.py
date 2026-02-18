@@ -4,7 +4,7 @@ from aiogram import Bot, Router
 from aiogram.filters import CommandStart, Command
 from aiogram.types import Message, ChatMemberUpdated
 from aiogram.enums import ChatMemberStatus
-from redis import Redis
+from redis.asyncio import Redis
 
 from app.forms import AddLesson, DeleteLesson
 from app.models import Lesson
