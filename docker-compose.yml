@@ -1,0 +1,43 @@
+services:
+  postgres:
+    image: postgres:16
+    restart: always
+    shm_size: 128mb
+    environment:
+      - POSTGRES_USER=${POSTGRES_USER}
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
+      - POSTGRES_DB=${POSTGRES_DB}
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    networks:
+      - internal
+  redis:
+    image: redis:8.6
+    restart: always
+    volumes:
+      - redis_data:/data
+    networks:
+      - internal
+  app:
+    build: .
+    restart: unless-stopped
+    env_file:
+      - .env
+    depends_on:
+      - postgres
+      - redis
+    networks:
+      - internal
+      - public
+
+volumes:
+  pgdata:
+  redis_data:
+
+
+networks:
+  internal:
+    driver: bridge
+    internal: true
+  public:
+    driver: bridge
