@@ -49,12 +49,26 @@ async def send_lesson_reminder(
 
 
 async def send_homework_reminder(
-    bot: Bot, chat_id: int, subject: str, time: str
+    bot: Bot, redis: Redis, schedule: Schedule, lesson_id: int
 ) -> None:
     """Утром в день занятия - напоминание про дедлайн к ДЗ"""
+
+    if await redis.get(f"cancel:{lesson_id}"):
+        return
+
+    lesson = schedule.get_lesson(lesson_id)
+    if not lesson:
+        return
+
+    chat_id = await redis.get(f"group:{lesson.group_n}")
+    if not chat_id:
+        return
+
     await bot.send_message(
-        chat_id=chat_id,
-        text=HOMEWORK_REMINDER_TEXT.format(subject=subject, time=time),
+        int(chat_id),
+        text=HOMEWORK_REMINDER_TEXT.format(
+            subject=lesson.subject, time=lesson.start_time.strftime("%H:%M")
+        ),
     )
 
 
@@ -63,5 +77,5 @@ async def send_payment_reminder(bot: Bot, redis: Redis, group_n: str) -> None:
     chat_id = await redis.get(f"group:{group_n}")
     if not chat_id:
         return
-    
+
     await bot.send_message(chat_id=chat_id, text=PAYMENT_REMINDER_TEXT)
