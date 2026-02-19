@@ -1,11 +1,11 @@
-from datetime import time
+from datetime import datetime, time
 from typing import Annotated
-import dateparser
-from pydantic import BaseModel, BeforeValidator
 from zoneinfo import ZoneInfo
+import dateparser
+from pydantic import BaseModel, BeforeValidator, computed_field
 
-MSK = ZoneInfo("Europe/Moscow")
-UTC = ZoneInfo("UTC")
+MSK = "Europe/Moscow"
+UTC = "UTC"
 
 
 def validate_day_of_week(value: int):
@@ -35,7 +35,13 @@ class Lesson(BaseModel):
             if not parsed_day:
                 raise ValueError("Unknown day")
             parsed_time = dateparser.parse(
-                time_str, languages=["ru"], settings={"PREFER_DATES_FROM": "future"}
+                time_str,
+                languages=["ru"],
+                settings={
+                    "PREFER_DATES_FROM": "future",
+                    "TIMEZONE": MSK,
+                    "TO_TIMEZONE": UTC,
+                },
             )
             if not parsed_time:
                 raise ValueError("Unknown time")
@@ -47,3 +53,13 @@ class Lesson(BaseModel):
             )
         else:
             raise ValueError("In your data must be minimum 4 words after command")
+
+    @computed_field
+    @property
+    def start_time_msk(self) -> str:
+        """Время в МСК для отображения"""
+        utc_dt = datetime.now(ZoneInfo(UTC)).replace(
+            hour=self.start_time.hour, minute=self.start_time.minute
+        )
+        msk_dt = utc_dt.astimezone(ZoneInfo(MSK))
+        return msk_dt.strftime("%H:%M")

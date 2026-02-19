@@ -12,6 +12,16 @@ from app.schedule import Schedule
 
 router = Router()
 
+DAYS_RU = {
+    0: "Понедельник",
+    1: "Вторник",
+    2: "Среда",
+    3: "Четверг",
+    4: "Пятница",
+    5: "Суббота",
+    6: "Воскресенье",
+}
+
 
 @router.message(CommandStart())
 async def on_start(msg: Message) -> None:
@@ -39,16 +49,16 @@ async def on_add(msg: Message, schedule: Schedule) -> None:
         await schedule.add(data)
 
         await msg.reply(
-            f"✅ Урок добавлен!\n\n"
+            "✅ Урок добавлен!\n\n"
             f"<b>{lesson.subject}</b>\n"
             f"День: {DAYS_RU[lesson.day]}\n"
-            f"Время: {lesson.start_time.strftime('%H:%M')}\n"
+            f"Время: {lesson.start_time_msk}\n"
             f"Группа: {lesson.group_n}"
         )
     except (ValueError, IndexError):
         await msg.reply(
             "❌ Неверный формат команды.\n\n"
-            "<b>Формат:</b> <code>/add [группа] [день] [время] [предмет]</code>\n\n"
+            "<b>Формат:</b> <code>/add [группа] [день] [время (МСК)] [предмет]</code>\n\n"
             "<b>Пример:</b> <code>/add 1 Пн 10:00 Математика</code>"
         )
 
@@ -74,7 +84,7 @@ async def on_list(msg: Message, schedule: Schedule) -> None:
         ):
             text += (
                 f"#{lesson_id} — {DAYS_RU[lesson.day]} "
-                f"{lesson.start_time.strftime('%H:%M')} — "
+                f"{lesson.start_time_msk} — "
                 f"<i>{lesson.subject}</i>\n"
             )
         text += "\n"
@@ -135,17 +145,6 @@ async def on_update(msg: Message, schedule: Schedule) -> None:
         "🚧 Команда в разработке\n\n"
         "Пока можно удалить урок через /delete и создать новый через /add"
     )
-
-
-DAYS_RU = {
-    0: "Понедельник",
-    1: "Вторник",
-    2: "Среда",
-    3: "Четверг",
-    4: "Пятница",
-    5: "Суббота",
-    6: "Воскресенье",
-}
 
 
 @router.my_chat_member()

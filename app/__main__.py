@@ -1,5 +1,5 @@
 import asyncio
-import asyncpg  # type: ignore[import]
+import asyncpg
 from aiogram import Bot, Dispatcher
 from aiogram.enums import ParseMode, UpdateType
 from aiogram.types import BotCommand, BotCommandScopeChat
@@ -52,10 +52,10 @@ async def main() -> None:
         ]
     )
 
-    pool = await asyncpg.create_pool(DATABASE_URL)  # type: ignore
-    async with pool.acquire() as conn:  # type: ignore
+    pool = await asyncpg.create_pool(DATABASE_URL)
+    async with pool.acquire() as conn:
         with open("migrations/001_init.sql") as f:
-            await conn.execute(f.read())  # type: ignore
+            await conn.execute(f.read())
 
     redis = await from_url(REDIS_URL)
 

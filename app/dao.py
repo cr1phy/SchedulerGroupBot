@@ -1,4 +1,4 @@
-from asyncpg import Pool, Record  # type: ignore[import]
+from asyncpg import Pool, Record
 
 from app.models import Lesson
 
@@ -8,7 +8,7 @@ class LessonDAO:
         self._pool = pool
 
     async def insert(self, lesson: Lesson) -> int:
-        return await self._pool.fetchval(  # type: ignore
+        return await self._pool.fetchval(
             "INSERT INTO lessons (group_n, day_of_week, start_time, subject) VALUES ($1, $2, $3, $4) RETURNING id",
             lesson.group_n,
             lesson.day,
@@ -17,7 +17,7 @@ class LessonDAO:
         )
 
     async def get_all(self) -> list[tuple[int, Lesson]]:
-        rows: list[Record] = await self._pool.fetch("SELECT * FROM lessons")  # type: ignore
+        rows: list[Record] = await self._pool.fetch("SELECT * FROM lessons")
         return [
             (
                 row["id"],
@@ -32,7 +32,7 @@ class LessonDAO:
         ]
 
     async def update(self, lesson_id: int, new_lesson: Lesson) -> None:
-        await self._pool.execute(  # type: ignore
+        await self._pool.execute(
             "UPDATE lessons SET group_n=$1, day_of_week=$2, start_time=$3, subject=$4 WHERE id=$5",
             new_lesson.group_n,
             new_lesson.day,
@@ -42,7 +42,7 @@ class LessonDAO:
         )
 
     async def delete(self, lesson_id: int) -> None:
-        await self._pool.execute(  # type: ignore
+        await self._pool.execute(
             "DELETE FROM lessons WHERE id=$1",
             lesson_id,
         )
