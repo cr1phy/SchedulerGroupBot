@@ -6,8 +6,8 @@ from typing import Callable, Any
 from aiogram import Bot
 from redis.asyncio import Redis
 from app.dao import LessonDAO
-from apscheduler.schedulers.asyncio import AsyncIOScheduler # type: ignore
-from apscheduler.jobstores.base import JobLookupError # type: ignore
+from apscheduler.schedulers.asyncio import AsyncIOScheduler  # type: ignore
+from apscheduler.jobstores.base import JobLookupError  # type: ignore
 from app.forms import AddLesson, DeleteLesson, UpdateLesson
 from app.models import Lesson
 from app.reminders import (
@@ -38,7 +38,9 @@ class Schedule:
     def setup_reminders(self, bot: Bot, redis: Redis, payment_link: str) -> None:
         self._lesson_reminder = partial(send_lesson_reminder, bot, redis)
         self._homework_reminder = partial(send_homework_reminder, bot, redis)
-        self._payment_reminder = partial(send_payment_reminder, bot, redis, payment_link)
+        self._payment_reminder = partial(
+            send_payment_reminder, bot, redis, payment_link
+        )
 
     def setup_payment_reminders(self) -> None:
         groups = set(lesson.group_n for lesson in self._lessons.values())

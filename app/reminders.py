@@ -38,7 +38,10 @@ async def send_lesson_reminder(
         return
 
     await bot.send_message(
-        int(chat_id), f"⏰ Через 30 минут урок:\n<b>{lesson.subject}</b>"
+        int(chat_id),
+        text=LESSON_REMINDER_TEXT.format(
+            subject=lesson.subject, time=lesson.start_time_msk
+        ),
     )
 
 

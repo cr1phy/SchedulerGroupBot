@@ -70,8 +70,8 @@ async def main() -> None:
     schedule = Schedule(dao)
     schedule.start()
     schedule.setup_reminders(bot, redis, PAYMENT_LINK)
-    schedule.setup_payment_reminders()
     await schedule.load()
+    schedule.setup_payment_reminders()
 
     await set_commands(bot)
     await dp.start_polling(  # type: ignore
