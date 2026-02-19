@@ -27,6 +27,7 @@ BOT_TOKEN = get_required_envvar("BOT_TOKEN")
 DATABASE_URL = get_required_envvar("DATABASE_URL")
 REDIS_URL = get_required_envvar("REDIS_URL")
 OWNER_TGID = int(get_required_envvar("OWNER_TGID"))
+PAYMENT_LINK = getenv("PAYMENT_LINK", "")
 
 
 async def set_commands(bot: Bot) -> None:
@@ -68,7 +69,7 @@ async def main() -> None:
     dao = LessonDAO(pool)
     schedule = Schedule(dao)
     schedule.start()
-    schedule.setup_reminders(bot, redis)
+    schedule.setup_reminders(bot, redis, PAYMENT_LINK)
     schedule.setup_payment_reminders()
     await schedule.load()
 

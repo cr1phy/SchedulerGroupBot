@@ -64,10 +64,19 @@ async def send_homework_reminder(
     )
 
 
-async def send_payment_reminder(bot: Bot, redis: Redis, group_n: str) -> None:
+async def send_payment_reminder(
+    bot: Bot, redis: Redis, group_n: str, payment_link: str
+) -> None:
     """Каждый понедельник - напоминание об оплате"""
     chat_id = await redis.get(f"group:{group_n}")
     if not chat_id:
         return
 
-    await bot.send_message(chat_id=chat_id, text=PAYMENT_REMINDER_TEXT)
+    text = PAYMENT_REMINDER_TEXT
+    if payment_link:
+        text += f"\n<b><a href='{payment_link}'>Ссылка на оплату</a></b>"
+
+    await bot.send_message(
+        chat_id=int(chat_id),
+        text=text,
+    )

@@ -35,10 +35,10 @@ class Schedule:
             self._lessons[lesson_id] = lesson
             self._add_job(lesson_id, lesson)
 
-    def setup_reminders(self, bot: Bot, redis: Redis) -> None:
+    def setup_reminders(self, bot: Bot, redis: Redis, payment_link: str) -> None:
         self._lesson_reminder = partial(send_lesson_reminder, bot, redis)
         self._homework_reminder = partial(send_homework_reminder, bot, redis)
-        self._payment_reminder = partial(send_payment_reminder, bot, redis)
+        self._payment_reminder = partial(send_payment_reminder, bot, redis, payment_link)
 
     def setup_payment_reminders(self) -> None:
         groups = set(lesson.group_n for lesson in self._lessons.values())
