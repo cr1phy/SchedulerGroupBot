@@ -1,7 +1,9 @@
 [project]
 name = "scheduler-bot"
 version = "0.1.0"
-description = "Add your description here"
+description = "Telegram bot for notifying users"
+authors = [{ name = "Sergey Krifov", email = "me@cr1phy.ru" }]
+maintainers = [{ name = "Sergey Krifov", email = "me@cr1phy.ru" }]
 readme = "README.md"
 requires-python = ">=3.13"
 dependencies = [
@@ -17,6 +19,4 @@ dependencies = [
 ]
 
 [dependency-groups]
-dev = [
-    "pytest>=9.0.2",
-]
+dev = ["asyncpg-stubs>=0.31.1", "pytest>=9.0.2"]
