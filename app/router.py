@@ -37,14 +37,23 @@ async def on_start(msg: Message) -> None:
 
 
 @router.message(Command("add"))
-async def on_add(msg: Message, schedule: Schedule) -> None:
+async def on_add(msg: Message, redis: Redis, schedule: Schedule) -> None:
     if msg.text is None:
         await msg.reply("Текст сообщения пуст")
         return
-
+    
     try:
         text = msg.text.split(maxsplit=1)[1]
         lesson = Lesson.from_str(text)
+
+        chat_id = await redis.get(f"group:{lesson.group_n}")
+        if not chat_id:
+            await msg.reply(
+                f"⚠️ Группа {lesson.group_n} не подключена!\n"
+                f"Сначала добавь бота в чат, которое содержит в названии 'Группа {lesson.group_n}'"
+            )
+            return
+        
         data = AddLesson(lesson=lesson)
         await schedule.add(data)
 

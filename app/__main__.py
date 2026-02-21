@@ -1,5 +1,7 @@
 import asyncio
 import asyncpg
+import structlog
+import re
 from aiogram import Bot, Dispatcher
 from aiogram.enums import ParseMode, UpdateType
 from aiogram.types import BotCommand, BotCommandScopeChat
@@ -7,11 +9,11 @@ from aiogram.client.default import DefaultBotProperties
 from os import getenv
 from dotenv import load_dotenv
 from redis.asyncio import from_url
-import structlog
 from app.dao import LessonDAO
 from app.middlewares import LoggingMiddleware, OnlyOwnerMiddleware
 from app.router import router
 from app.schedule import Schedule
+from pathlib import Path
 
 load_dotenv()
 
@@ -28,6 +30,57 @@ DATABASE_URL = get_required_envvar("DATABASE_URL")
 REDIS_URL = get_required_envvar("REDIS_URL")
 OWNER_TGID = int(get_required_envvar("OWNER_TGID"))
 PAYMENT_LINK = getenv("PAYMENT_LINK", "")
+
+
+async def apply_migrations(pool: asyncpg.Pool) -> None:
+    """Автоматически применяет SQL миграции из папки migrations/"""
+
+    async with pool.acquire() as conn:
+        await conn.execute(
+            """
+            CREATE TABLE IF NOT EXISTS schema_version (
+                version INT PRIMARY KEY,
+                filename VARCHAR(255) NOT NULL,
+                applied_at TIMESTAMP DEFAULT NOW()
+            )
+        """
+        )
+
+        current_version = await conn.fetchval(
+            "SELECT COALESCE(MAX(version), 0) FROM schema_version"
+        )
+
+        migrations_dir = Path("migrations")
+        migration_files = sorted(
+            migrations_dir.glob("*.sql"),
+            key=lambda f: int(
+                matches.group(1) if (matches := re.match(r"^(\d+)_", f.name)) else ""
+            ),
+        )
+
+        for migration_file in migration_files:
+            match = re.match(r"^(\d+)_", migration_file.name)
+            if not match:
+                continue
+
+            version = int(match.group(1))
+
+            if version <= current_version:
+                continue
+
+            print(f"Applying migration {version}: {migration_file.name}")
+
+            with open(migration_file) as f:
+                sql = f.read()
+                await conn.execute(sql)
+
+            await conn.execute(
+                "INSERT INTO schema_version (version, filename) VALUES ($1, $2)",
+                version,
+                migration_file.name,
+            )
+
+            print(f"✅ Migration {version} applied")
 
 
 async def set_commands(bot: Bot) -> None:
@@ -54,9 +107,7 @@ async def main() -> None:
     )
 
     pool = await asyncpg.create_pool(DATABASE_URL)
-    async with pool.acquire() as conn:
-        with open("migrations/001_init.sql") as f:
-            await conn.execute(f.read())
+    await apply_migrations(pool)
 
     redis = await from_url(REDIS_URL)
 

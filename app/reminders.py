@@ -4,8 +4,7 @@ from app.models import Lesson
 
 LESSON_REMINDER_TEXT = (
     "⏰ <b>Напоминание о занятии</b>\n\n"
-    "Через 30 минут начнётся урок:\n"
-    "<b>{subject}</b>\n"
+    'Через 30 минут начнётся урок: <b>"{subject}"</b>'
     "Время начала: {time}"
 )
 

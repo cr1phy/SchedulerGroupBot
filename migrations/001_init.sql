@@ -1,5 +1,3 @@
-DROP TABLE IF EXISTS lessons;
-
 CREATE TABLE lessons (
     id BIGSERIAL PRIMARY KEY,
     group_n VARCHAR(50) NOT NULL,
